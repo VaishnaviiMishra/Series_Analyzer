@@ -3,6 +3,5 @@ transformers==4.44.0
 huggingface_hub==0.24.5
 gradio==4.36.1
 fastapi==0.104.1
-pydantic==2.6.4
 nltk==3.8.1
 pyvis == 0.3.2
