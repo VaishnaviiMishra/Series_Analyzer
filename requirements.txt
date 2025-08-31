@@ -6,3 +6,4 @@ fastapi==0.104.1
 nltk==3.8.1
 pyvis == 0.3.2
 evaluate==0.4.2
+python-dotenv==1.0.1
