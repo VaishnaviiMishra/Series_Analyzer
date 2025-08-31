@@ -43,7 +43,7 @@ class ThemeClassifier():
         
         # Run Model
         theme_output = self.theme_classifier(
-            script_batches, #remove 2
+            script_batches,
             self.theme_list,
             multi_label=True
         )

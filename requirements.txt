@@ -5,3 +5,4 @@ gradio==4.36.1
 fastapi==0.104.1
 nltk==3.8.1
 pyvis == 0.3.2
+evaluate==0.4.2
