@@ -1,6 +1,6 @@
 # requirements-colab.txt
 transformers==4.44.0
-huggingface_hub==0.24.5
+huggingface_hub==0.34.4
 gradio==4.36.1
 fastapi==0.104.1
 nltk==3.8.1
