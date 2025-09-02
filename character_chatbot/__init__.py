@@ -1,1 +1,3 @@
-from .character_chatbot import CharacterChatBot
+from .character_chatbot import GeminiChatBot
+
+__all__ = ['GeminiChatBot']

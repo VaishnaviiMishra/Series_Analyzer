@@ -1,214 +1,109 @@
-import pandas as pd
-import torch
-import re
-import huggingface_hub
-from datasets import Dataset
-import transformers
-from transformers import (
-    BitsAndBytesConfig,
-    AutoModelForCausalLM,
-    AutoTokenizer,
-)
-from peft import LoraConfig, PeftModel
-from trl import SFTConfig, SFTTrainer
-import gc
+import os
+import google.generativeai as genai
+from dotenv import load_dotenv
 
-# Remove actions from transcript
-def remove_paranthesis(text):
-    result = re.sub(r'\(.*?\)','',text)
-    return result
+load_dotenv()
 
-class CharacterChatBot():
-
-    def __init__(self,
-                 model_path,
-                 data_path="/content/data/naruto.csv",
-                 huggingface_token = None
-                 ):
+class GeminiChatBot:
+    def __init__(self):
+        self.api_key = os.getenv('GEMINI_API_KEY')
+        self.available = bool(self.api_key)
         
-        self.model_path = model_path
-        self.data_path = data_path
-        self.huggingface_token = huggingface_token
-        self.base_model_path = "meta-llama/Meta-Llama-3-8B-Instruct"
-        self.device = "cuda" if torch.cuda.is_available() else "cpu"
-
-        if self.huggingface_token is not None:
-            huggingface_hub.login(self.huggingface_token)
-        
-        if huggingface_hub.repo_exists(self.model_path):
-            self.model = self.load_model(self.model_path)
+        if self.available:
+            try:
+                genai.configure(api_key=self.api_key)
+                model_name = 'models/gemini-1.5-flash-latest'
+                self.model = genai.GenerativeModel(model_name)
+                self.available = True
+                print(f"✅ Using model: {model_name}")
+            except Exception as e:
+                print(f"❌ Error configuring Gemini: {e}")
+                self.available = False
         else:
-            print("Model Not found in huggingface hub we will train out own model")
-            train_dataset = self.load_data()
-            self.train(self.base_model_path, train_dataset)
-            self.model = self.load_model(self.model_path)
+            print("❌ Gemini API key not found in .env file")
     
-    def chat(self, message, history):
-        messages = []
-        # Add the system ptomp 
-        messages.append({"role":"system","content":""""Your are Naruto from the anime "Naruto". Your responses should reflect his personality and speech patterns \n"""})
-
-        for message_and_respnse in history:
-            messages.append({"role":"user","content":message_and_respnse[0]})
-            messages.append({"role":"assistant","content":message_and_respnse[1]})
+    def chat(self, message, history, character="naruto"):
+        if not self.available:
+            return "❌ Gemini chatbot not available. Please check your API key."
         
-        messages.append({"role":"user","content":message})
+        try:
+            # Enhanced character-specific prompts with detailed personalities
+            character_prompts = {
+                "naruto": """You ARE Naruto Uzumaki. Respond EXACTLY as him:
+- ORPHAN JINCHURIKI of Nine-Tails, hated by village, dreams of becoming HOKAGE
+- SUPER energetic! Use "DATTEBAYO!", "BELIEVE IT!", lots of EXCLAMATIONS!!
+- Techniques: Shadow Clone Jutsu, Rasengan, Sage Mode, Six Paths Sage Mode
+- Talk about: Ramen, protecting friends, Training with Jiraiya, Kurama inside me
+- Family: Son of Minato & Kushina, Husband to Hinata, Father of Boruto & Himawari
+- NEVER give up! SUPER positive attitude! Loud and passionate!""",
 
-        terminator = [
-            self.model.tokenizer.eos_token_id,
-            self.model.tokenizer.convert_tokens_to_ids("<|eot_id|>")
-        ]
+                "sasuke": """You ARE Sasuke Uchiha. Respond EXACTLY as him:
+- SOLE UCHIHA survivor, clan massacred by brother Itachi, seeks power & redemption
+- COLD, BROODING, minimal words. No emotions. Formal, measured speech.
+- Techniques: Sharingan, Rinnegan, Chidori, Amaterasu, Susanoo
+- Talk about: Uchiha clan honor, revenge, becoming stronger, hating weakness
+- Family: Son of Fugaku & Mikoto, Husband to Sakura, Father of Sarada
+- Short, direct responses. No exclamations. Distant and superior tone.""",
 
-        output = self.model(
-            messages,
-            max_length=256,
-            eos_token_id=terminator,
-            do_sample=True,
-            temperature=0.6,
-            top_p=0.9
-        )
-
-        output_message = output[0]['generated_text'][-1]
-        return output_message
-
-
-    def load_model(self, model_path):
-        bnb_config = BitsAndBytesConfig(
-            load_in_4bit=True,
-            bnb_4bit_quant_type="nf4",
-            bnb_4bit_compute_dtype=torch.float16,
-        )
-        pipeline = transformers.pipeline("text-generation",
-                                         model = model_path,
-                                         model_kwargs={"torch_dtype":torch.float16,
-                                                       "quantization_config":bnb_config,
-                                                       }
-                                         )
-        return pipeline
-    
-    def train(self,
-              base_model_name_or_path,
-              dataset,
-              output_dir = "./results",
-              per_device_train_batch_size = 1,
-              gradient_accumulation_steps = 1,
-              optim = "paged_adamw_32bit",
-              save_steps = 200,
-              logging_steps = 10,
-              learning_rate = 2e-4,
-              max_grad_norm = 0.3,
-              max_steps = 300,
-              warmup_ratio = 0.3,
-              lr_scheduler_type = "constant",
-              ):
-        
-        bnb_config = BitsAndBytesConfig(
-            load_in_4bit=True,
-            bnb_4bit_quant_type="nf4",
-            bnb_4bit_compute_dtype=torch.float16,
-        )
-
-        model = AutoModelForCausalLM.from_pretrained(base_model_name_or_path, 
-                                                     quantization_config= bnb_config,
-                                                     trust_remote_code=True)
-        model.config.use_cache = False
-
-        toknizer = AutoTokenizer.from_pretrained(base_model_name_or_path)
-        toknizer.pad_token = toknizer.eos_token
-
-        lora_alpha = 16
-        lora_dropout = 0.1
-        lora_r=64
-
-        peft_config = LoraConfig(
-            lora_alpha=lora_alpha,
-            lora_dropout=lora_dropout,
-            r=lora_r,
-            bias="none",
-            task_type="CASUAL_LM"
-        )
-
-        training_arguments = SFTConfig(
-        output_dir=output_dir,
-        per_device_train_batch_size = per_device_train_batch_size,
-        gradient_accumulation_steps = gradient_accumulation_steps,
-        optim = optim,
-        save_steps = save_steps,
-        logging_steps = logging_steps,
-        learning_rate = learning_rate,
-        fp16= True,
-        max_grad_norm = max_grad_norm,
-        max_steps = max_steps,
-        warmup_ratio = warmup_ratio,
-        group_by_length = True,
-        lr_scheduler_type = lr_scheduler_type,
-        report_to = "none"
-        )
-
-        max_seq_len = 512
-
-        trainer = SFTTrainer(
-            model = model,
-            train_dataset=dataset,
-            peft_config=peft_config,
-            dataset_text_field="prompt",
-            max_seq_length=max_seq_len,
-            tokenizer=toknizer,
-            args = training_arguments,
-        )
-
-        trainer.train()
-
-        # Save model 
-        trainer.model.save_pretrained("final_ckpt")
-        toknizer.save_pretrained("final_ckpt")
-
-        # Flush memory
-        del trainer, model
-        gc.collect()
-
-        base_model = AutoModelForCausalLM.from_pretrained(base_model_name_or_path,
-                                                          return_dict=True,
-                                                          quantization_config=bnb_config,
-                                                          torch_dtype = torch.float16,
-                                                          device_map = self.device
-                                                          )
-        
-        tokenizer = AutoTokenizer.from_pretrained(base_model_name_or_path)
-
-        model = PeftModel.from_pretrained(base_model,"final_ckpt")
-        model.push_to_hub(self.model_path)
-        tokenizer.push_to_hub(self.model_path)
-
-        # Flush Memory
-        del model, base_model
-        gc.collect()
-
-    def load_data(self):
-        naruto_transcript_df = pd.read_csv(self.data_path)
-        naruto_transcript_df = naruto_transcript_df.dropna()
-        naruto_transcript_df['line'] = naruto_transcript_df['line'].apply(remove_paranthesis)
-        naruto_transcript_df['number_of_words'] = naruto_transcript_df['line'].str.strip().str.split(" ")
-        naruto_transcript_df['number_of_words'] = naruto_transcript_df['number_of_words'].apply(lambda x: len(x))
-        naruto_transcript_df['naruto_response_flag'] = 0
-        naruto_transcript_df.loc[(naruto_transcript_df['name']=="Naruto")&(naruto_transcript_df['number_of_words']>5),'naruto_response_flag']=1
-
-        indexes_to_take = list(naruto_transcript_df[(naruto_transcript_df['naruto_response_flag']==1)&(naruto_transcript_df.index>0)].index)
-
-        system_promt = """" Your are Naruto from the anime "Naruto". Your responses should reflect his personality and speech patterns \n"""
-        prompts = []
-        for ind in indexes_to_take:
-            prompt = system_promt
-
-            prompt += naruto_transcript_df.iloc[ind -1]['line']
-            prompt += '\n'
-            prompt += naruto_transcript_df.iloc[ind]['line']
-            prompts.append(prompt)
-        
-        df = pd.DataFrame({"prompt":prompts})
-        dataset = Dataset.from_pandas(df)
-
-        return dataset
-
-
-        
+                "sakura": """You ARE Sakura Haruno. Respond EXACTLY as her:
+- MEDICAL NINJA prodigy, trained by Tsunade, overcame insecurity about forehead
+- INTELLIGENT but emotional. Practical yet caring. Blunt but protective.
+- Techniques: Mystical Palm, Creation Rebirth, super strength "SHANNARO!"
+- Talk about: Chakra control, healing, protecting patients, Tsunade's teachings
+- Family: Married Sasuke Uchiha, became Sakura Uchiha, mother of Sarada
+- Balance medical knowledge with emotional depth. Strong-willed determination."""
+            }
+            
+            # Character display names
+            char_display_name = {"naruto": "Naruto", "sasuke": "Sasuke", "sakura": "Sakura"}[character]
+            
+            # Build concise conversation with better formatting
+            conversation_parts = [character_prompts[character]]
+            
+            # Add history efficiently
+            for user_msg, bot_msg in history[-6:]:  # Keep only last 6 exchanges for context
+                conversation_parts.append(f"Human: {user_msg}")
+                conversation_parts.append(f"{char_display_name}: {bot_msg}")
+            
+            conversation_parts.append(f"Human: {message}")
+            conversation_parts.append(f"{char_display_name}:")
+            
+            conversation = "\n".join(conversation_parts)
+            
+            # Character-specific generation settings with increased token limits
+            generation_config = {
+                "naruto": {"temperature": 0.95, "max_output_tokens": 500, "top_p": 0.9},
+                "sasuke": {"temperature": 0.6, "max_output_tokens": 300, "top_p": 0.8},
+                "sakura": {"temperature": 0.8, "max_output_tokens": 400, "top_p": 0.85}
+            }[character]
+            
+            response = self.model.generate_content(
+                conversation,
+                generation_config=genai.types.GenerationConfig(**generation_config)
+            )
+            
+            # Clean and enhance response
+            response_text = response.text.strip()
+            
+            # Character-specific response enhancements (less aggressive)
+            if character == "naruto":
+                if not any(x in response_text.lower() for x in ['dattebayo', 'believe it']):
+                    if len(response_text) < 100:
+                        response_text += " Believe it, dattebayo!"
+                    else:
+                        # Add to the end if it's a longer response
+                        response_text = response_text.rstrip('.!') + "! Believe it, dattebayo!"
+                
+            elif character == "sasuke":
+                # Don't truncate Sasuke's responses - let him speak
+                response_text = response_text.replace('Hmm', 'Hn.')
+                
+            elif character == "sakura":
+                if 'strength' in response_text.lower() and 'shannaro' not in response_text.lower():
+                    if len(response_text.split()) < 30:  # Only for shorter responses
+                        response_text = response_text.rstrip('.!') + ' SHANNARO!'
+            
+            return response_text
+            
+        except Exception as e:
+            return f"❌ Error: {str(e)}"
