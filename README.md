@@ -1,7 +1,6 @@
 # TVanalyser - Naruto Character Analysis & Chatbot Platform
 
 A comprehensive AI-powered platform for analyzing Naruto anime content, featuring theme classification, character network analysis, jutsu classification, and interactive character chatbots.
-🔗 **LinkedIn Post**: https://www.linkedin.com/posts/vaishnavi-mishra-b17ba6256_adding-another-skill-that-nowadays-is-a-must-activity-7368537981785153538-WKyB?utm_source=share&utm_medium=member_desktop&rcm=ACoAAD8uPMMBqRpwGF1E1y23LaGw3BRKzCllt0Q 
 
 <img width="1918" height="927" alt="Screenshot 2025-09-02 102344" src="https://github.com/user-attachments/assets/af489f4f-e16d-45a7-bab7-0dcff15060a9" />
 
@@ -172,7 +171,8 @@ This project showcases advanced NLP techniques and ML deployment strategies. Fee
 ## 📄 License
 
 This project is for educational and demonstration purposes.
-
+---
+🔗 **LinkedIn Post**: https://www.linkedin.com/posts/vaishnavi-mishra-b17ba6256_adding-another-skill-that-nowadays-is-a-must-activity-7368537981785153538-WKyB?utm_source=share&utm_medium=member_desktop&rcm=ACoAAD8uPMMBqRpwGF1E1y23LaGw3BRKzCllt0Q 
 ---
 
 *Built with ❤️ using Python, Hugging Face, and Gradio*
