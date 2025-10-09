@@ -2,7 +2,7 @@
 
 A comprehensive AI-powered platform for analyzing Naruto anime content, featuring theme classification, character network analysis, jutsu classification, and interactive character chatbots.
 
-🔗 **GitHub**: https://lnkd.in/gju5FENq
+<img width="1918" height="927" alt="Screenshot 2025-09-02 102344" src="https://github.com/user-attachments/assets/af489f4f-e16d-45a7-bab7-0dcff15060a9" />
 
 ## 🎯 Project Overview
 
@@ -41,6 +41,8 @@ TVanalyser is a multi-phase machine learning project that leverages various NLP 
 - Importance scoring for narrative elements
 - Episode-level theme analysis
 
+<img width="1919" height="537" alt="Screenshot 2025-09-02 102415" src="https://github.com/user-attachments/assets/1f336963-7489-48fd-be10-ac45dccff751" />
+  
 ### Phase 2 – Character Neural Network
 **Objective**: Build an interactive web of character connections and relationships
 
@@ -55,6 +57,8 @@ TVanalyser is a multi-phase machine learning project that leverages various NLP 
 - Named Entity Recognition (NER) for character identification
 - Relationship extraction from dialogue and narrative
 - Dynamic network visualization with character interactions
+
+<img width="1864" height="828" alt="Screenshot 2025-09-02 102505" src="https://github.com/user-attachments/assets/8877ce96-88b6-425b-8e64-1407f254e9c5" />
 
 ### Phase 3 – Text Classification (Jutsu Classification)
 **Objective**: Classify queries into ninja techniques (Ninjutsu, Genjutsu, Taijutsu)
@@ -74,6 +78,8 @@ TVanalyser is a multi-phase machine learning project that leverages various NLP 
 
 🔗 **Hugging Face Model**: https://lnkd.in/gCN-atFY
 
+<img width="1798" height="607" alt="Screenshot 2025-09-02 103109" src="https://github.com/user-attachments/assets/f7d70269-3874-4f1e-8668-a62aec44f89d" />
+
 ### Phase 4 – Character Chatbot
 **Objective**: Enable conversations with favorite characters (Naruto, Sasuke, Sakura)
 
@@ -88,6 +94,8 @@ TVanalyser is a multi-phase machine learning project that leverages various NLP 
   - Focused on conversation design and retrieval augmentation
   - Implemented multi-agent conversation flows
   - Optimized for resource efficiency and deployment scalability
+
+<img width="1839" height="670" alt="Screenshot 2025-09-02 105824" src="https://github.com/user-attachments/assets/e25c7f27-1dee-4e59-8c3c-d68566f3f4d2" />
 
 ## 🎨 User Interface
 
@@ -163,7 +171,8 @@ This project showcases advanced NLP techniques and ML deployment strategies. Fee
 ## 📄 License
 
 This project is for educational and demonstration purposes.
-
+---
+🔗 **LinkedIn Post**: https://www.linkedin.com/posts/vaishnavi-mishra-b17ba6256_adding-another-skill-that-nowadays-is-a-must-activity-7368537981785153538-WKyB?utm_source=share&utm_medium=member_desktop&rcm=ACoAAD8uPMMBqRpwGF1E1y23LaGw3BRKzCllt0Q 
 ---
 
 *Built with ❤️ using Python, Hugging Face, and Gradio*
