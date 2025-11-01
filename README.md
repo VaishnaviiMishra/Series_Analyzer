@@ -1,3 +1,14 @@
+---
+title: Naruto TVanalyser
+emoji: 🍥
+colorFrom: orange
+colorTo: red
+sdk: gradio
+sdk_version: 4.0.0
+app_file: app.py
+pinned: false
+---
+
 # TVanalyser - Naruto Character Analysis & Chatbot Platform
 
 A comprehensive AI-powered platform for analyzing Naruto anime content, featuring theme classification, character network analysis, jutsu classification, and interactive character chatbots.

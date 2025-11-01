@@ -1,13 +1,47 @@
 import gradio as gr
+import os
+import sys
+import warnings
+from pathlib import Path
+from dotenv import load_dotenv
+
+# Suppress known deprecation warnings from transformers library
+warnings.filterwarnings("ignore", category=FutureWarning, module="transformers")
+
+# Auto-download spaCy model if not present (needed for Character Network)
+# COMMENTED OUT: Only needed if processing new subtitle files from scratch
+# Since we're using pre-computed stub files (ner_output.csv), this is not required
+# Uncomment below if you want to process new subtitles:
+
+# try:
+#     import spacy
+#     try:
+#         nlp = spacy.load("en_core_web_trf")
+#         print("✅ spaCy model 'en_core_web_trf' loaded successfully!")
+#     except OSError:
+#         print("📥 Downloading spaCy model 'en_core_web_trf'... (this may take a few minutes on first run)")
+#         os.system("python -m spacy download en_core_web_trf")
+#         print("✅ spaCy model downloaded successfully!")
+# except Exception as e:
+#     print(f"⚠️ Warning: Could not load spaCy model: {e}")
+#     print("Character Network feature may not work properly.")
+
+print("ℹ️ Using pre-computed data from stubs/ folder (spaCy model not required)")
+
+# Now import modules that depend on spaCy
 from theme_classifier import ThemeClassifier
 from character_network import NamedEntityRecognizer, CharacterNetworkGenerator
 from text_classification import JutsuClassifier
 from character_chatbot import GeminiChatBot
 from components import create_navbar, create_hero_section, create_footer, create_about_section
-import os
-from dotenv import load_dotenv
 
 load_dotenv()
+
+# Get project root directory (works on any OS - Windows, Linux, Mac)
+PROJECT_ROOT = Path(__file__).parent.absolute()
+STUBS_DIR = PROJECT_ROOT / "stubs"
+THEME_OUTPUT_PATH = STUBS_DIR / "theme_classifier_output.csv"
+NER_OUTPUT_PATH = STUBS_DIR / "ner_output.csv"
 
 # Initialize the Gemini chatbot
 try:
@@ -23,6 +57,10 @@ except Exception as e:
     character_chatbot = None
 
 def get_themes(theme_list_str, subtitles_path, save_path):
+    # Handle save path - if it's just a filename, use stubs directory
+    if save_path and not ('/' in save_path or '\\' in save_path):
+        save_path = str(STUBS_DIR / save_path)
+    
     theme_list = theme_list_str.split(',')
     theme_classifier = ThemeClassifier(theme_list)
     output_df = theme_classifier.get_themes(subtitles_path, save_path)
@@ -43,6 +81,10 @@ def get_themes(theme_list_str, subtitles_path, save_path):
     return output_chart
 
 def get_character_network(subtitles_path, ner_path):
+    # Handle NER path - if it's just a filename, use stubs directory
+    if ner_path and not ('/' in ner_path or '\\' in ner_path):
+        ner_path = str(STUBS_DIR / ner_path)
+    
     ner = NamedEntityRecognizer()
     ner_df = ner.get_ners(subtitles_path, ner_path)
     character_network_generator = CharacterNetworkGenerator()
@@ -161,11 +203,9 @@ def main():
         
         /* Message container - increased height and better spacing */
         .gr-chat-message {
-            max-height: 380px !important;
-            min-height: 380px !important;
             overflow-y: auto !important;
             padding: 10px !important;
-            margin-bottom: 10px !important;
+            margin-bottom: 1px !important;
         }
         
         /* Individual messages - better spacing and wrapping */
@@ -250,16 +290,20 @@ def main():
                             label="Themes (comma-separated)", 
                             value="friendship,hope,sacrifice,battle,self development,betrayal,love,dialogue"
                         )
-                        subtitles_path = gr.Textbox(
-                            label="Subtitles or Script Path", 
-                            value="  "
-                        )
+                        # Commented out for deployment - using pre-computed data
+                        # Uncomment below if you want users to provide their own subtitle files
+                        # subtitles_path = gr.Textbox(
+                        #     label="Subtitles or Script Path", 
+                        #     value="  "
+                        # )
                         save_path = gr.Textbox(
                             label="Save Path", 
-                            value=r"C:\Users\Vaishnavi's Asus\Desktop\TVanalyser\stubs\theme_classifier_output.csv"
+                            value="theme_classifier_output.csv",
+                            placeholder="Filename (saved in stubs/)"
                         )
                         get_themes_button = gr.Button("Analyze Themes", variant="primary")
-                        get_themes_button.click(get_themes, inputs=[theme_list, subtitles_path, save_path], outputs=[plot])
+                        # Using empty string for subtitles_path since we're using pre-computed data
+                        get_themes_button.click(get_themes, inputs=[theme_list, gr.Textbox(value="", visible=False), save_path], outputs=[plot])
 
         # Character Network Section
         with gr.Row(elem_id="network-section", elem_classes="section"):
@@ -269,16 +313,20 @@ def main():
                     with gr.Column():
                         network_html = gr.HTML()
                     with gr.Column():
-                        subtitles_path_ner = gr.Textbox(
-                            label="Subtitles or Script Path", 
-                            value=" "
-                        )
+                        # Commented out for deployment - using pre-computed data
+                        # Uncomment below if you want users to provide their own subtitle files
+                        # subtitles_path_ner = gr.Textbox(
+                        #     label="Subtitles or Script Path", 
+                        #     value=" "
+                        # )
                         ner_path = gr.Textbox(
                             label="NERs Save Path", 
-                            value=r"C:\Users\Vaishnavi's Asus\Desktop\TVanalyser\stubs\ner_output.csv"
+                            value="ner_output.csv",
+                            placeholder="Filename (saved in stubs/)"
                         )
                         get_network_graph_button = gr.Button("Generate Network", variant="primary")
-                        get_network_graph_button.click(get_character_network, inputs=[subtitles_path_ner, ner_path], outputs=[network_html])
+                        # Using empty string for subtitles_path_ner since we're using pre-computed data
+                        get_network_graph_button.click(get_character_network, inputs=[gr.Textbox(value="", visible=False), ner_path], outputs=[network_html])
 
         # Text Classification with LLMs
         with gr.Row(elem_id="jutsu-section", elem_classes="section"):
@@ -292,17 +340,20 @@ def main():
                             label='Model Path', 
                             value="vaishnaviiii34/jutsu_classifier"
                         )
-                        text_classifcation_data_path = gr.Textbox(
-                            label='Data Path', 
-                            value="  "
-                        )
+                        # Commented out for deployment - model handles data internally
+                        # Uncomment below if you want users to provide custom data path
+                        # text_classifcation_data_path = gr.Textbox(
+                        #     label='Data Path', 
+                        #     value="  "
+                        # )
                         text_to_classify = gr.Textbox(
                             label='Jutsu Description', 
                             value="The Rasengan is a powerful, spherical ball of rapidly spinning chakra created and held in the user's palm, developed by Minato Namikaze and described as the pinnacle of shape transformation in Naruto. It's a high-level, A-rank technique that focuses on compressing and rotating chakra to achieve incredible density and rotational power",
                             lines=3
                         )
                         classify_text_button = gr.Button("Classify Jutsu", variant="primary")
-                        classify_text_button.click(classify_text, inputs=[text_classifcation_model, text_classifcation_data_path, text_to_classify], outputs=[text_classification_output])
+                        # Using empty string for data path since model is pre-trained
+                        classify_text_button.click(classify_text, inputs=[text_classifcation_model, gr.Textbox(value="", visible=False), text_to_classify], outputs=[text_classification_output])
 
        # Character Chatbot Section
         with gr.Row(elem_id="chat-section", elem_classes="section"):

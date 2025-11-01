@@ -1,7 +1,18 @@
+# Python
 *.pyc
+*.pyo
+*.pyd
+__pycache__/
+*.so
+*.egg
+*.egg-info/
+dist/
+build/
 *.ipynb_checkpoints
+
+# Environment variables (NEVER commit API keys!)
 .env
-*__pycache__/
+.env.local
 
 # Virtual environments
 myenv/
@@ -9,13 +20,36 @@ env/
 venv/
 *.venv/
 ENV/
-
-# Python virtual environment files
 bin/
 include/
 lib/
 lib64/
 pyvenv.cfg
 
-#added in hugging face
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+*.log
+
+# Large subtitle files (don't deploy, only keep stubs)
+data/Subtitles/*.ass
+data/Subtitles/*.srt
+
+readmes/
+
+# Model cache (will be downloaded on deployment)
+.cache/
+models/
+
+# Hugging Face model checkpoints (use HF hub instead)
 vaishnaviiii34/
+
+# IMPORTANT: DO NOT ignore stubs/ - we need these for deployment!
+# stubs/  ← NEVER uncomment this line!
+

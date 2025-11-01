@@ -1,0 +1,6 @@
+# System packages required for dependencies
+# This file is used by Hugging Face Spaces to install system-level packages
+
+# Commented out - not needed if using pre-computed stub files
+# build-essential
+

@@ -12,10 +12,60 @@ class GeminiChatBot:
         if self.available:
             try:
                 genai.configure(api_key=self.api_key)
-                model_name = 'models/gemini-1.5-flash-latest'
-                self.model = genai.GenerativeModel(model_name)
-                self.available = True
-                print(f"✅ Using model: {model_name}")
+                
+                # List available models for debugging
+                try:
+                    available_models = genai.list_models()
+                    print("\n📋 Available Gemini models with generateContent support:")
+                    for model in available_models:
+                        if 'generateContent' in model.supported_generation_methods:
+                            print(f"   ✓ {model.name}")
+                    print()  # Empty line for readability
+                except Exception as list_error:
+                    print(f"⚠️ Could not list models: {list_error}")
+                
+                # Try multiple model names in order of preference
+                # Updated with latest stable model names (2024)
+                model_names = [
+                    'gemini-2.0-flash-exp',      # Newest experimental
+                    'gemini-1.5-flash',          # Latest stable Flash model
+                    'gemini-1.5-pro',            # Latest stable Pro model
+                    'gemini-pro',                # Fallback to older stable
+                ]
+                
+                model_loaded = False
+                print("🔍 Trying to load Gemini model...")
+                for model_name in model_names:
+                    try:
+                        print(f"   Attempting: {model_name}...", end=" ")
+                        self.model = genai.GenerativeModel(model_name)
+                        # Test if model is accessible
+                        self.available = True
+                        print(f"✅ SUCCESS!")
+                        print(f"\n🎉 Chatbot ready with model: {model_name}\n")
+                        model_loaded = True
+                        break
+                    except Exception as model_error:
+                        print(f"❌ Failed")
+                        # Only print full error for debugging if needed
+                        if "404" in str(model_error):
+                            print(f"      (Model not found)")
+                        else:
+                            print(f"      ({str(model_error)[:80]})")
+                        continue
+                
+                if not model_loaded:
+                    print("\n" + "="*60)
+                    print("❌ ERROR: Could not load any Gemini model!")
+                    print("="*60)
+                    print("📝 Solutions:")
+                    print("   1. Check if your API key is valid")
+                    print("   2. Look at the 'Available Gemini models' list above")
+                    print("   3. Update model_names in character_chatbot.py to match")
+                    print("   4. Run: pip install --upgrade google-generativeai")
+                    print("="*60 + "\n")
+                    self.available = False
+                    
             except Exception as e:
                 print(f"❌ Error configuring Gemini: {e}")
                 self.available = False
